@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Chain, FlowResult, FlowNode, FlowEdge, FlowStream } from '@/shared/messages';
 import { CHAIN_META } from '@/shared/chains';
 import { drawGraph } from './graph';
+import { exportReport } from './export';
 
 const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '⏳' };
 
@@ -66,6 +67,33 @@ export function Analysis({ chain, address }: { chain: Chain; address: string }) 
           <div style={{ color: '#fb7185' }}>Error: {error}</div>
         )}
         {result && <Summary result={result} sym={sym} />}
+        {result && (
+          <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => svgRef.current && exportReport(svgRef.current, result)}
+              style={btn}
+            >
+              Export report (PNG)
+            </button>
+            <button
+              onClick={async () => {
+                await chrome.runtime.sendMessage({
+                  t: 'REPORT',
+                  report: {
+                    kind: 'address',
+                    chain,
+                    address: result.root,
+                    evidence: result.reasons,
+                  },
+                });
+                alert('Address reported. Thank you.');
+              }}
+              style={btn}
+            >
+              Report address
+            </button>
+          </div>
+        )}
         <div style={{ marginTop: 16 }}>
           <label style={{ fontSize: 12, opacity: 0.7 }}>Depth (hops)</label>
           <select
@@ -145,6 +173,17 @@ function Summary({ result, sym }: { result: FlowResult; sym: string }) {
     </div>
   );
 }
+
+const btn = {
+  flex: 1,
+  background: '#111827',
+  border: '1px solid #334155',
+  color: '#e2e8f0',
+  borderRadius: 8,
+  padding: '8px 10px',
+  cursor: 'pointer',
+  fontSize: 13,
+};
 
 function Section({ title, children }: { title: string; children: any }) {
   return (

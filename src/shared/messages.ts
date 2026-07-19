@@ -62,18 +62,32 @@ export interface FlowResult {
 
 // ---- content <-> service worker messages ----
 
+export interface ScamReport {
+  kind: 'site' | 'address';
+  url?: string;
+  domain?: string;
+  chain?: Chain;
+  address?: string;
+  evidence: string[];
+  ts: number;
+}
+
 export type Msg =
   | { t: 'ADDR_FOUND'; chain: Chain; address: string }
   | { t: 'PAGE_SIGNALS'; giveawayHit: boolean; countdownHit: boolean; celebrityHit: boolean }
   | { t: 'CHECK_URL'; url: string }
   | { t: 'FAKE_FEED_VERIFY'; rows: { address?: string; hash?: string; chain: Chain }[] }
-  | { t: 'GET_PAGE_STATE'; tabId?: number };
+  | { t: 'GET_PAGE_STATE'; tabId?: number }
+  | { t: 'REPORT'; report: Omit<ScamReport, 'ts'> }
+  | { t: 'FEEDBACK_FALSE_POSITIVE'; url: string };
 
 export type MsgResponse =
   | { t: 'ADDR_BRIEF'; brief: AddressBrief }
   | { t: 'URL_VERDICT'; verdict: UrlVerdict }
   | { t: 'FAKE_FEED_RESULT'; fake: boolean; evidence: string[] }
   | { t: 'PAGE_STATE'; verdict: UrlVerdict; addresses: AddressBrief[] }
+  | { t: 'REPORT_ACK'; queued: number; sent: boolean }
+  | { t: 'OK' }
   | { t: 'ERR'; message: string };
 
 // port protocol for streamed flow analysis

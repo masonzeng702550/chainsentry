@@ -8,6 +8,7 @@ export interface Settings {
   etherscanApiKey: string;
   language: 'auto' | 'en' | 'zh-TW';
   userAllowlist: string[];
+  reportEndpoint: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   etherscanApiKey: '',
   language: 'auto',
   userAllowlist: [],
+  reportEndpoint: '',
 };
 
 export async function getSettings(): Promise<Settings> {

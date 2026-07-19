@@ -21,6 +21,8 @@ It also detects **fabricated "live transaction" feeds** (front-end fake ticker t
 | Laundering signals | Mixer proximity, fast-split / peel-chain timing, self-cycle detection |
 | Fake-feed detection | Cyclic-replay + on-chain contradiction checks on "live transaction" widgets |
 | YouTube hints | Warns when a channel name mimics an official brand but isn't verified |
+| Community reporting | Report a site/address; applied locally at once, queued, optionally POSTed to an endpoint |
+| Report export | One-click PNG of the money-flow graph + risk summary (no backend) |
 
 ## Architecture
 
@@ -48,9 +50,9 @@ Load the unpacked extension:
 
 ## Status
 
-Early MVP. Implemented: address detection & validation, chain-data providers (BTC/ETH/TRON) with caching & failover, money-flow graph, refund/cycle/fast-split analysis, risk scoring, link guard, blocklist sync, fake-feed detection, YouTube hints, popup / options / analysis UIs.
+Implemented: address detection & validation, chain-data providers (BTC/ETH/TRON) with caching & failover, money-flow graph, refund/cycle/fast-split analysis, risk scoring, link guard, blocklist sync, fake-feed detection, YouTube hints, community reporting (local + optional endpoint) with false-positive feedback, PNG report export, and an expanded entity-label seed set (mixers / exchanges / bridges). Popup / options / analysis UIs.
 
-Roadmap: community reporting + shared blocklist, report export, larger entity-label dataset, livestream-frame OCR for on-screen addresses.
+Roadmap: shared community blocklist backend, larger entity-label dataset (public tagpacks), livestream-frame OCR for on-screen addresses, Solana support.
 
 ## Disclaimer
 

@@ -11,6 +11,7 @@ interface Settings {
   chains: Record<Chain, boolean>;
   etherscanApiKey: string;
   userAllowlist: string[];
+  reportEndpoint: string;
 }
 
 const DEFAULTS: Settings = {
@@ -20,6 +21,7 @@ const DEFAULTS: Settings = {
   chains: { btc: true, eth: true, tron: true, sol: false },
   etherscanApiKey: '',
   userAllowlist: [],
+  reportEndpoint: '',
 };
 
 function Options() {
@@ -75,6 +77,18 @@ function Options() {
         placeholder="Leave blank to use public rate limits"
         style={{ width: '100%', padding: 8, background: '#111827', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8 }}
       />
+
+      <h3 style={{ marginTop: 24 }}>Community report endpoint (optional)</h3>
+      <input
+        value={s.reportEndpoint}
+        onInput={(e) => update({ reportEndpoint: (e.target as HTMLInputElement).value })}
+        placeholder="https://… — leave blank to keep reports local-only"
+        style={{ width: '100%', padding: 8, background: '#111827', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8 }}
+      />
+      <div style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>
+        Reports are applied locally immediately. If an endpoint is set, they are also POSTed there
+        (queued and retried on failure).
+      </div>
 
       <div style={{ marginTop: 16, height: 18, color: '#34d399', fontSize: 13 }}>
         {saved ? 'Saved ✓' : ''}

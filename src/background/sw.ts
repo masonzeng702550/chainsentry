@@ -4,6 +4,9 @@ import { initProviders } from './chaindata';
 import { analyzeAddress, briefAddress } from './flowengine';
 import { checkUrl, type PageSignals } from './linkguard';
 import { loadBlocklist, syncBlocklist } from './blocklist';
+import { submitReport, flushReports } from './reports';
+import { setSettings, getSettings } from './storage';
+import { registrableDomain, hostname } from '@/shared/domain';
 
 interface TabState {
   verdict: UrlVerdict;
@@ -46,6 +49,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   await loadBlocklist();
   await syncBlocklist(true);
   chrome.alarms.create('blocklist-sync', { periodInMinutes: 360 });
+  chrome.alarms.create('report-flush', { periodInMinutes: 30 });
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -55,6 +59,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener((a) => {
   if (a.name === 'blocklist-sync') syncBlocklist();
+  if (a.name === 'report-flush') flushReports();
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => tabs.delete(tabId));
@@ -134,6 +139,32 @@ async function handleMessage(msg: Msg, sender: chrome.runtime.MessageSender): Pr
         }
       }
       return { t: 'FAKE_FEED_RESULT', fake, evidence };
+    }
+    case 'REPORT': {
+      const { queued, sent } = await submitReport({ ...msg.report, ts: Date.now() });
+      // Re-evaluate the current tab now that a scam label may have been applied.
+      if (tabId != null && sender.tab?.url) {
+        const s = tabState(tabId);
+        s.verdict = await checkUrl(sender.tab.url, s.signals);
+        updateBadge(tabId);
+      }
+      return { t: 'REPORT_ACK', queued, sent };
+    }
+    case 'FEEDBACK_FALSE_POSITIVE': {
+      const host = hostname(msg.url);
+      if (host) {
+        const domain = registrableDomain(host);
+        const s = await getSettings();
+        if (!s.userAllowlist.includes(domain)) {
+          await setSettings({ userAllowlist: [...s.userAllowlist, domain] });
+        }
+        if (tabId != null) {
+          const st = tabState(tabId);
+          st.verdict = { level: 'safe', reasons: [] };
+          updateBadge(tabId);
+        }
+      }
+      return { t: 'OK' };
     }
     default:
       return { t: 'ERR', message: 'unknown message' };

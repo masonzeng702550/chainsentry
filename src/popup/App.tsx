@@ -13,11 +13,14 @@ const LABEL: Record<string, string> = {
 export function App() {
   const [verdict, setVerdict] = useState<UrlVerdict>({ level: 'unknown', reasons: [] });
   const [addresses, setAddresses] = useState<AddressBrief[]>([]);
+  const [tabUrl, setTabUrl] = useState('');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     (async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return;
+      setTabUrl(tab.url ?? '');
       const resp = (await chrome.runtime.sendMessage({ t: 'GET_PAGE_STATE', tabId: tab.id })) as MsgResponse;
       if (resp?.t === 'PAGE_STATE') {
         setVerdict(resp.verdict);
@@ -25,6 +28,29 @@ export function App() {
       }
     })();
   }, []);
+
+  const reportSite = async () => {
+    if (!tabUrl) return;
+    const domain = (() => {
+      try {
+        return new URL(tabUrl).hostname;
+      } catch {
+        return '';
+      }
+    })();
+    await chrome.runtime.sendMessage({
+      t: 'REPORT',
+      report: { kind: 'site', url: tabUrl, domain, evidence: verdict.reasons },
+    });
+    setNote('Reported. Thank you — this helps protect others.');
+  };
+
+  const reportFalsePositive = async () => {
+    if (!tabUrl) return;
+    await chrome.runtime.sendMessage({ t: 'FEEDBACK_FALSE_POSITIVE', url: tabUrl });
+    setVerdict({ level: 'safe', reasons: [] });
+    setNote('Thanks — this site is now allowlisted for you.');
+  };
 
   const openAnalysis = (a: AddressBrief) => {
     chrome.tabs.create({
@@ -90,7 +116,17 @@ export function App() {
         ))}
       </div>
 
-      <div style={{ marginTop: 14, fontSize: 10, opacity: 0.5 }}>
+      <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+        <button onClick={reportSite} style={{ ...btnGhost, flex: 1 }}>
+          Report this site
+        </button>
+        <button onClick={reportFalsePositive} style={{ ...btnGhost, flex: 1 }}>
+          Report false positive
+        </button>
+      </div>
+      {note && <div style={{ marginTop: 8, fontSize: 12, color: '#34d399' }}>{note}</div>}
+
+      <div style={{ marginTop: 12, fontSize: 10, opacity: 0.5 }}>
         Analysis is informational and not financial or legal advice.
       </div>
     </div>
