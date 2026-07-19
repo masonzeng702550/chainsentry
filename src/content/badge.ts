@@ -22,6 +22,7 @@ export function attachBadge(
   wrapper.appendChild(after);
 
   const host = document.createElement('span');
+  if (__CS_E2E__) host.setAttribute('data-cs-badge', address);
   wrapper.appendChild(host);
   const root = host.attachShadow({ mode: 'closed' });
   const badge = document.createElement('span');

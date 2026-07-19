@@ -10,6 +10,7 @@ export function showBlockingWarning(reasons: string[], onContinue: () => void) {
 
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;inset:0;z-index:2147483647';
+  if (__CS_E2E__) host.setAttribute('data-cs-overlay', 'block');
   const root = host.attachShadow({ mode: 'closed' });
   const domain = registrableDomain(hostname(location.href) ?? location.host);
 

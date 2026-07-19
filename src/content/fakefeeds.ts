@@ -55,6 +55,7 @@ function markFake(el: HTMLElement, evidence: string[]) {
   markCount++;
   const host = document.createElement('div');
   host.style.cssText = 'position:relative';
+  if (__CS_E2E__) host.setAttribute('data-cs-fakefeed', '1');
   const root = host.attachShadow({ mode: 'closed' });
   root.innerHTML = `
     <div style="position:absolute;inset:0;background:rgba(127,29,29,.12);border:2px solid #e11d48;

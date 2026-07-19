@@ -8,6 +8,9 @@ export default defineConfig({
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
   },
+  define: {
+    __CS_E2E__: JSON.stringify(process.env.CS_E2E === '1'),
+  },
   plugins: [preact(), crx({ manifest })],
   build: {
     target: 'es2022',
