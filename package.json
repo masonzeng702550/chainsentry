@@ -23,6 +23,7 @@
     "@types/d3": "^7.4.3",
     "@types/node": "^20.19.43",
     "autoprefixer": "^10.4.19",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.0",

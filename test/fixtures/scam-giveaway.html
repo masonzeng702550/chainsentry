@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  Synthetic scam-page fixture for ChainSentry tests and manual demos.
+  Mimics a fake "Elon Musk / Tesla" crypto giveaway livestream landing page.
+  Contains NO real solicitation — addresses are public well-known ones used
+  only so detection logic (address scan, entity labels, fake-feed) has something
+  to bite on. Do not deploy.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tesla & SpaceX Official Crypto Event 2026</title>
+  </head>
+  <body>
+    <header>
+      <h1>🚀 Elon Musk — Tesla &amp; SpaceX Official Crypto Giveaway 2026</h1>
+      <p class="tagline">
+        To celebrate, we are giving back to the community. Send BTC or ETH and
+        <strong>receive 2x back instantly!</strong>
+      </p>
+      <p class="tagline-zh">轉 1 BTC 立即返還 2 BTC，數量有限！</p>
+      <div class="countdown">⏳ Hurry! Event ends in <span id="clock">09:58</span></div>
+    </header>
+
+    <section class="participate">
+      <h2>How to participate</h2>
+      <p>Send any amount to one of the official event addresses below:</p>
+      <ul class="addresses">
+        <li>BTC: <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code></li>
+        <li>ETH: <code>0x47CE0C6eD5B0Ce3d3A51fdb1C52DC66a7c3c2936</code></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Live transactions</h2>
+      <ul id="feed" class="transaction-feed">
+        <li>1Fh7ajXabJBpZPZw…a2 sent 0.50 BTC — received 1.00 BTC · 3 seconds ago</li>
+        <li>0x9a1B…c4dE sent 2.0 ETH — received 4.0 ETH · 8 seconds ago</li>
+        <li>bc1qxy…8f3k sent 0.10 BTC — received 0.20 BTC · 12 seconds ago</li>
+        <li>0x71C7…9AaB sent 1.5 ETH — received 3.0 ETH · 19 seconds ago</li>
+        <li>3FZbgi29…kL sent 0.25 BTC — received 0.50 BTC · 24 seconds ago</li>
+        <li>0x4E2f…77dC sent 5.0 ETH — received 10.0 ETH · 31 seconds ago</li>
+      </ul>
+    </section>
+
+    <!--
+      The "live" feed is actually a fixed array replayed in a loop — the classic
+      fabricated-ticker trick. This inline script only runs in a real browser
+      (the jsdom tests set innerHTML and do not execute it), and drives the
+      cyclic-replay detector during a manual demo.
+    -->
+    <script>
+      (function () {
+        var feed = document.getElementById('feed');
+        if (!feed) return;
+        var rows = Array.prototype.slice.call(feed.children).map(function (li) {
+          return li.textContent;
+        });
+        var i = 0;
+        setInterval(function () {
+          var li = document.createElement('li');
+          li.textContent = rows[i % rows.length]; // replays the same fixed array
+          feed.insertBefore(li, feed.firstChild);
+          while (feed.children.length > 6) feed.removeChild(feed.lastChild);
+          i++;
+        }, 1200);
+      })();
+    </script>
+  </body>
+</html>

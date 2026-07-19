@@ -39,8 +39,19 @@ Data sources: mempool.space / Blockstream (BTC), Etherscan V2 (ETH), TronGrid (T
 npm install
 npm run dev        # HMR dev build
 npm run build      # typecheck + production build -> dist/
-npm run test       # unit tests (validators, refund/flow engine, domain heuristics)
+npm run test       # unit + integration tests (32): validators, refund/flow engine,
+                   # domain heuristics, entity labels, and a full scam-page detection pass
 ```
+
+### Test scaffold
+
+`test/fixtures/scam-giveaway.html` is a synthetic "Elon Musk / Tesla giveaway"
+page (fake 2x-refund copy, countdown, wallet addresses, and a fabricated
+"live transactions" ticker). `test/integration/scam-page.test.ts` loads it in
+jsdom and asserts the real detection path fires end to end: giveaway/countdown/
+celebrity signals, address extraction, feed-candidate detection, cyclic-replay
+recognition, and typosquat/homoglyph/subdomain-spoof link checks. The fixture
+also doubles as a manual demo page (open it with the unpacked extension loaded).
 
 Load the unpacked extension:
 

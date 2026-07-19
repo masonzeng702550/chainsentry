@@ -2,7 +2,8 @@ import type { UrlVerdict, RiskLevel } from '@/shared/messages';
 import type { ReasonCode } from '@/shared/i18n';
 import { reasonText } from '@/shared/i18n';
 import { BRAND_ALLOWLIST } from '@/shared/brands';
-import { hostname, registrableDomain, levenshtein, homoglyphFold } from '@/shared/domain';
+import { hostname, registrableDomain } from '@/shared/domain';
+import { detectImpersonation } from '@/shared/impersonation';
 import { isBlocked } from './blocklist';
 import { getSettings } from './storage';
 
@@ -30,20 +31,9 @@ export async function checkUrl(url: string, signals?: PageSignals): Promise<UrlV
     return verdict('danger', ['blocklist_hit']);
   }
 
-  // Brand impersonation
-  const folded = homoglyphFold(domain);
-  for (const brand of BRAND_ALLOWLIST) {
-    if (folded === brand && domain !== brand) return verdict('danger', ['homoglyph']);
-    const brandName = brand.split('.')[0];
-    if (brandName.length >= 4) {
-      const dist = levenshtein(domain.split('.')[0], brandName);
-      if (dist > 0 && dist <= 2) return verdict('danger', ['typosquat']);
-      // subdomain spoof: brand token in a subdomain but registrable domain differs
-      if (host.includes(brandName) && domain !== brand && host !== domain) {
-        return verdict('danger', ['subdomain_spoof']);
-      }
-    }
-  }
+  // Brand impersonation (pure, testable)
+  const impersonation = detectImpersonation(host, domain, BRAND_ALLOWLIST);
+  if (impersonation) return verdict('danger', [impersonation]);
 
   // Heuristic scoring -> at most 'warn'
   let score = 0;

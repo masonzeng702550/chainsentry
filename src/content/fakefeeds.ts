@@ -1,42 +1,25 @@
 import type { Chain } from '@/shared/chains';
 import { scanText } from '@/shared/address';
 import { send } from './messaging';
-
-interface Candidate {
-  el: HTMLElement;
-  rows: HTMLElement[];
-}
-
-/** Find list-like blocks that look like a "live transactions" feed. */
-function findCandidates(): Candidate[] {
-  const out: Candidate[] = [];
-  const containers = document.querySelectorAll<HTMLElement>('table tbody, ul, ol, [class*="transaction"], [class*="feed"], [class*="activity"]');
-  for (const c of containers) {
-    const rows = [...c.children].filter((n): n is HTMLElement => n instanceof HTMLElement);
-    if (rows.length < 5) continue;
-    const withMoney = rows.filter((r) => /(\d[\d,.]*\s*(btc|eth|usdt|bnb|sol))/i.test(r.textContent ?? ''));
-    if (withMoney.length >= 5) out.push({ el: c, rows });
-  }
-  return out;
-}
+import { findFeedContainers, hashRow, isCyclicSequence, type FeedCandidate } from './fakefeed-core';
 
 /** Detect front-end fabricated feeds via cyclic replay + on-chain contradiction. */
 export function watchFakeFeeds() {
-  const candidates = findCandidates();
+  const candidates = findFeedContainers(document);
   for (const cand of candidates) {
     checkCyclicReplay(cand);
     verifyOnChain(cand);
   }
 }
 
-function checkCyclicReplay(cand: Candidate) {
+function checkCyclicReplay(cand: FeedCandidate) {
   const history: string[] = [];
   const obs = new MutationObserver(() => {
     const first = cand.el.firstElementChild?.textContent?.trim().slice(0, 80);
     if (!first) return;
-    history.push(hash(first));
+    history.push(hashRow(first));
     if (history.length > 40) history.shift();
-    if (isCyclic(history)) {
+    if (isCyclicSequence(history)) {
       markFake(cand.el, ['Rows repeat on a fixed cycle (front-end array, not live data).']);
       obs.disconnect();
     }
@@ -45,7 +28,7 @@ function checkCyclicReplay(cand: Candidate) {
   setTimeout(() => obs.disconnect(), 60_000);
 }
 
-async function verifyOnChain(cand: Candidate) {
+async function verifyOnChain(cand: FeedCandidate) {
   const text = cand.rows
     .slice(0, 5)
     .map((r) => r.textContent ?? '')
@@ -85,28 +68,6 @@ function markFake(el: HTMLElement, evidence: string[]) {
   const style = getComputedStyle(el);
   if (style.position === 'static') el.style.position = 'relative';
   el.appendChild(host);
-}
-
-function hash(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return String(h);
-}
-
-/** True if the sequence shows a repeating period (fixed-array replay). */
-function isCyclic(seq: string[]): boolean {
-  if (seq.length < 12) return false;
-  for (let period = 2; period <= seq.length / 3; period++) {
-    let ok = true;
-    for (let i = seq.length - 1; i >= seq.length - period * 2 && i - period >= 0; i--) {
-      if (seq[i] !== seq[i - period]) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) return true;
-  }
-  return false;
 }
 
 export function fakeFeedCount(): number {
