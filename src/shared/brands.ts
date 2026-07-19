@@ -1,0 +1,45 @@
+// Allowlist of well-known crypto/brand domains (eTLD+1) used for typosquatting detection.
+// This is a seed list; the real product ships a larger curated set.
+export const BRAND_ALLOWLIST: string[] = [
+  'tesla.com',
+  'spacex.com',
+  'openai.com',
+  'x.com',
+  'twitter.com',
+  'binance.com',
+  'coinbase.com',
+  'kraken.com',
+  'metamask.io',
+  'ethereum.org',
+  'bitcoin.org',
+  'uniswap.org',
+  'opensea.io',
+  'ledger.com',
+  'trezor.io',
+  'phantom.app',
+  'solana.com',
+  'tron.network',
+  'microstrategy.com',
+  'blockchain.com',
+  'etherscan.io',
+  'gemini.com',
+  'okx.com',
+  'bybit.com',
+  'crypto.com',
+];
+
+// Brand tokens that scammers impersonate in giveaway pages / channel names.
+export const CELEBRITY_BRAND_TOKENS = [
+  'musk',
+  'elon',
+  'tesla',
+  'spacex',
+  'openai',
+  'vitalik',
+  'buterin',
+  'saylor',
+  'microstrategy',
+  'coinbase',
+  'binance',
+  'ripple',
+];

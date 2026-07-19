@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0b1120;
+  color: #e2e8f0;
+}
+.risk-danger {
+  color: #fb7185;
+}
+.risk-warn {
+  color: #fbbf24;
+}
+.risk-safe {
+  color: #34d399;
+}
