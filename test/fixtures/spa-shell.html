@@ -1,0 +1,29 @@
+<!doctype html>
+<!--
+  Minimal single-page-app shell, standing in for YouTube's client-side routing.
+  The first "view" is clean; navigating swaps in scam content via pushState with
+  no document load. Used to prove the content script re-analyses SPA route changes.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SPA shell</title>
+  </head>
+  <body>
+    <div id="view">
+      <h1>Home</h1>
+      <p>Nothing suspicious on this view.</p>
+    </div>
+    <button id="go">Go to giveaway view</button>
+
+    <script>
+      document.getElementById('go').addEventListener('click', function () {
+        history.pushState({}, '', '/watch?v=giveaway');
+        document.getElementById('view').innerHTML =
+          '<h1>Elon Musk Tesla Giveaway</h1>' +
+          '<p>Send BTC and receive 2x back instantly! Hurry, ends in 09:58</p>' +
+          '<p>BTC: <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code></p>';
+      });
+    </script>
+  </body>
+</html>

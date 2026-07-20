@@ -10,6 +10,11 @@ const OFFICIAL = [
 
 let shown = false;
 
+/** Allow a fresh banner after a SPA route change to a different video. */
+export function resetYouTubeGuard(): void {
+  shown = false;
+}
+
 /** On youtube.com watch/live pages, warn when the channel name mimics an official one. */
 export function checkYouTube() {
   if (!/youtube\.com/.test(location.host)) return;

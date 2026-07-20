@@ -67,42 +67,56 @@ export async function buildFlowGraph(
       }
       if (addr === rootN) rootTxs = txs;
 
-      for (const tx of txs) {
-        for (const inp of tx.inputs) {
-          for (const out of tx.outputs) {
-            const from = norm(inp.address);
-            const to = norm(out.address);
-            if (from === to) continue;
-            if (out.value < dust) continue;
-            if (from !== addr && to !== addr) continue; // edge must touch current node
-            addNode(nodes, chain, from, hop + 1);
-            addNode(nodes, chain, to, hop + 1);
-            const k = edgeKey(from, to);
-            const e = edges.get(k);
-            if (e) {
-              e.valueRaw += out.value;
-              e.txCount += 1;
-              e.firstTs = Math.min(e.firstTs, tx.timestamp);
-              e.lastTs = Math.max(e.lastTs, tx.timestamp);
-              e.value = formatAmount(e.valueRaw, chain);
-            } else {
-              edges.set(k, {
-                from,
-                to,
-                valueRaw: out.value,
-                value: formatAmount(out.value, chain),
-                txCount: 1,
-                firstTs: tx.timestamp,
-                lastTs: tx.timestamp,
-              });
-            }
-            const counterpart = from === addr ? to : from;
-            if (!visited.has(counterpart)) {
-              visited.add(counterpart);
-              next.push({ addr: counterpart, hop: hop + 1 });
-            }
-          }
+      const addEdge = (from: string, to: string, value: bigint, ts: number) => {
+        if (from === to || value < dust) return;
+        addNode(nodes, chain, from, hop + 1);
+        addNode(nodes, chain, to, hop + 1);
+        const k = edgeKey(from, to);
+        const e = edges.get(k);
+        if (e) {
+          e.valueRaw += value;
+          e.txCount += 1;
+          e.firstTs = Math.min(e.firstTs, ts);
+          e.lastTs = Math.max(e.lastTs, ts);
+          e.value = formatAmount(e.valueRaw, chain);
+        } else {
+          edges.set(k, {
+            from,
+            to,
+            valueRaw: value,
+            value: formatAmount(value, chain),
+            txCount: 1,
+            firstTs: ts,
+            lastTs: ts,
+          });
         }
+        const counterpart = from === addr ? to : from;
+        if (!visited.has(counterpart)) {
+          visited.add(counterpart);
+          next.push({ addr: counterpart, hop: hop + 1 });
+        }
+      };
+
+      for (const tx of txs) {
+        // Only pairs touching `addr` ever produced an edge, so walk inputs and
+        // outputs separately: O(inputs + outputs) instead of O(inputs x outputs),
+        // which matters for consolidation txs with hundreds of each.
+        const spent = tx.inputs.reduce(
+          (sum, i) => (norm(i.address) === addr ? sum + i.value : sum),
+          0n,
+        );
+        const received = tx.outputs.reduce(
+          (sum, o) => (norm(o.address) === addr ? sum + o.value : sum),
+          0n,
+        );
+
+        if (spent > 0n) {
+          for (const out of tx.outputs) addEdge(addr, norm(out.address), out.value, tx.timestamp);
+        }
+        if (received > 0n) {
+          for (const inp of tx.inputs) addEdge(norm(inp.address), addr, received, tx.timestamp);
+        }
+
         if (nodes.size >= MAX_NODES) {
           truncated = true;
           break;

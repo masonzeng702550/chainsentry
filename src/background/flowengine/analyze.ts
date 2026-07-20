@@ -85,7 +85,11 @@ export function detectCycles(g: RawGraph, maxDepth = 4): string[][] {
     for (const nb of adj.get(node) ?? []) {
       if (nb.lastTs < minTs) continue; // must be time-forward
       if (nb.to === g.root) {
-        if (path.length >= 2 && nb.lastTs - g.edges.get(`${g.root}->${path[1]}`)?.firstTs! < 7 * DAY) {
+        // Close the loop only if the round trip completes inside the window.
+        // The first hop's edge must exist; bail out rather than compare against
+        // undefined, which silently produces NaN and drops every cycle.
+        const firstHop = path.length >= 2 ? g.edges.get(`${g.root}->${path[1]}`) : undefined;
+        if (firstHop && nb.lastTs - firstHop.firstTs < 7 * DAY) {
           cycles.push([...path, g.root]);
         }
         continue;

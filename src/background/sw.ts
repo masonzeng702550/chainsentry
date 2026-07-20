@@ -5,7 +5,7 @@ import { analyzeAddress, briefAddress } from './flowengine';
 import { checkUrl, type PageSignals } from './linkguard';
 import { loadBlocklist, syncBlocklist } from './blocklist';
 import { submitReport, flushReports } from './reports';
-import { setSettings, getSettings } from './storage';
+import { setSettings, getSettings, addSessionOverride, getSessionOverrides } from './storage';
 import { registrableDomain, hostname } from '@/shared/domain';
 
 interface TabState {
@@ -79,6 +79,19 @@ async function handleMessage(msg: Msg, sender: chrome.runtime.MessageSender): Pr
   switch (msg.t) {
     case 'CHECK_URL': {
       const s = tabId != null ? tabState(tabId) : undefined;
+      // Honour a "continue anyway" choice for the rest of the session.
+      const host = hostname(msg.url);
+      if (host) {
+        const overrides = await getSessionOverrides();
+        if (overrides.includes(registrableDomain(host))) {
+          const verdict = { level: 'safe' as const, reasons: [] };
+          if (tabId != null && s) {
+            s.verdict = verdict;
+            updateBadge(tabId);
+          }
+          return { t: 'URL_VERDICT', verdict };
+        }
+      }
       const verdict = await checkUrl(msg.url, s?.signals);
       if (tabId != null && s) {
         s.verdict = verdict;
@@ -149,6 +162,11 @@ async function handleMessage(msg: Msg, sender: chrome.runtime.MessageSender): Pr
         updateBadge(tabId);
       }
       return { t: 'REPORT_ACK', queued, sent };
+    }
+    case 'CONTINUE_ANYWAY': {
+      const host = hostname(msg.url);
+      if (host) await addSessionOverride(registrableDomain(host));
+      return { t: 'OK' };
     }
     case 'FEEDBACK_FALSE_POSITIVE': {
       const host = hostname(msg.url);

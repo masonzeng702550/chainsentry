@@ -4,6 +4,9 @@ export class RateLimiter {
   private tokens: number;
   private lastRefill: number;
   private queue: Array<() => void> = [];
+  /** Single drain timer. Without this, every queued caller starts its own timer
+   *  chain, and the parallel chains drain tokens faster than the configured rate. */
+  private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly ratePerSec: number,
@@ -33,8 +36,10 @@ export class RateLimiter {
   }
 
   private schedule() {
+    if (this.timer !== null) return; // a drain is already pending
     const waitMs = Math.max(50, (1 / this.ratePerSec) * 1000);
-    setTimeout(() => {
+    this.timer = setTimeout(() => {
+      this.timer = null;
       this.refill();
       while (this.tokens >= 1 && this.queue.length) {
         this.tokens -= 1;
@@ -42,6 +47,11 @@ export class RateLimiter {
       }
       if (this.queue.length) this.schedule();
     }, waitMs);
+  }
+
+  /** Test/introspection helper. */
+  pending(): number {
+    return this.queue.length;
   }
 }
 
@@ -58,6 +68,8 @@ export async function getJson<T>(
       const res = await fetch(url, { signal: ctrl.signal, headers });
       clearTimeout(timer);
       if (res.status === 429) {
+        // Record it, otherwise exhausting every attempt on 429s throws "undefined".
+        lastErr = new Error(`HTTP 429 (rate limited) for ${url}`);
         await sleep(500 * (attempt + 1));
         continue;
       }

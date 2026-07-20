@@ -79,7 +79,8 @@ export type Msg =
   | { t: 'FAKE_FEED_VERIFY'; rows: { address?: string; hash?: string; chain: Chain }[] }
   | { t: 'GET_PAGE_STATE'; tabId?: number }
   | { t: 'REPORT'; report: Omit<ScamReport, 'ts'> }
-  | { t: 'FEEDBACK_FALSE_POSITIVE'; url: string };
+  | { t: 'FEEDBACK_FALSE_POSITIVE'; url: string }
+  | { t: 'CONTINUE_ANYWAY'; url: string };
 
 export type MsgResponse =
   | { t: 'ADDR_BRIEF'; brief: AddressBrief }

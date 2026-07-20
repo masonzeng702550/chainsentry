@@ -15,7 +15,8 @@ It also detects **fabricated "live transaction" feeds** (front-end fake ticker t
 | Area | What it does |
 |---|---|
 | Link safety | Known-scam blocklist sync, typosquat/homoglyph detection, giveaway-pattern heuristics |
-| Address detection | Finds & validates BTC / EVM / TRON addresses in page text and dynamic content (checksum-verified) |
+| Address detection | Finds & validates BTC / EVM / TRON addresses in visible page text and dynamic content (checksum-verified; script/style source is never scanned) |
+| SPA support | Re-analyses on client-side route changes, so YouTube-style navigation doesn't go unmonitored |
 | Money-flow analysis | BFS transaction graph (D3 force layout), entity labels, up to 4 hops |
 | Refund verification | Computes refund rate & value ratio to bust "double your crypto" claims |
 | Laundering signals | Mixer proximity, fast-split / peel-chain timing, self-cycle detection |
@@ -40,8 +41,9 @@ Data sources: mempool.space / Blockstream (BTC), Etherscan V2 (ETH), TronGrid (T
 npm install
 npm run dev        # HMR dev build
 npm run build      # typecheck + production build -> dist/
-npm run test       # unit + integration tests (32): validators, refund/flow engine,
-                   # domain heuristics, entity labels, and a full scam-page detection pass
+npm run test       # unit + integration tests (64): validators, refund/flow engine,
+                   # domain heuristics, entity labels, report-service moderation,
+                   # scanning scope, SPA navigation, and a full scam-page detection pass
 npm run test:e2e   # real-browser E2E: builds with CS_E2E=1 and drives a headless
                    # Chromium with the unpacked extension loaded (needs Playwright's
                    # Chromium: npx playwright install chromium)

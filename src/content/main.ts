@@ -1,8 +1,9 @@
-import { scanAndDecorate } from './detector';
+import { scanAndDecorate, resetDetector } from './detector';
 import { detectPageSignals } from './signals';
-import { showBlockingWarning } from './blocker';
+import { showBlockingWarning, resetBlocker } from './blocker';
 import { watchFakeFeeds } from './fakefeeds';
-import { checkYouTube } from './ytguard';
+import { checkYouTube, resetYouTubeGuard } from './ytguard';
+import { watchNavigation } from './navigation';
 import { send } from './messaging';
 import type { Chain } from '@/shared/chains';
 
@@ -29,11 +30,18 @@ async function getLocalSettings(): Promise<LocalSettings> {
   }
 }
 
-let continued = false;
+/** Domains the user chose to proceed on; suppresses the interstitial for this page view. */
+let continuedDomains = new Set<string>();
 
-async function run() {
-  const settings = await getLocalSettings();
+function currentDomain(): string {
+  try {
+    return new URL(location.href).hostname;
+  } catch {
+    return location.host;
+  }
+}
 
+async function analyzePage(settings: LocalSettings) {
   // 1. Page signals + URL verdict (drives badge + blocking).
   const text = document.body?.innerText?.slice(0, 200_000) ?? '';
   const sig = detectPageSignals(text);
@@ -49,10 +57,14 @@ async function run() {
     verdictResp?.t === 'URL_VERDICT' &&
     verdictResp.verdict.level === 'danger' &&
     settings.enableBlockingWarning &&
-    !continued
+    !continuedDomains.has(currentDomain())
   ) {
+    const domain = currentDomain();
     showBlockingWarning(verdictResp.verdict.reasons, () => {
-      continued = true;
+      // Remember the choice for this session so the warning does not reappear
+      // on every subsequent navigation within the same site.
+      continuedDomains.add(domain);
+      send({ t: 'CONTINUE_ANYWAY', url: location.href }).catch(() => {});
     });
   }
 
@@ -66,9 +78,21 @@ async function run() {
 
   // 4. YouTube channel hints.
   if (settings.enableYouTubeHints) checkYouTube();
+}
 
-  // 5. Observe dynamic content (chat, infinite scroll).
+async function run() {
+  const settings = await getLocalSettings();
+  await analyzePage(settings);
   installObserver(settings);
+
+  // Re-analyse on SPA route changes (YouTube et al.) — without this the extension
+  // only ever sees the first page of a single-page app.
+  watchNavigation(() => {
+    resetDetector();
+    resetYouTubeGuard();
+    resetBlocker();
+    analyzePage(settings);
+  });
 }
 
 function installObserver(settings: LocalSettings) {

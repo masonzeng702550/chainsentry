@@ -76,6 +76,22 @@ test('overlays a warning on the fabricated live-transaction ticker', async ({ co
   expect(await page.locator('[data-cs-fakefeed]').count()).toBe(1);
 });
 
+test('re-analyses after a SPA route change (no document load)', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto(`http://localhost:${PORT}/spa-shell.html`, { waitUntil: 'load' });
+
+  // The first view is clean, so nothing should be badged yet.
+  await page.waitForTimeout(1500);
+  expect(await page.locator('[data-cs-badge]').count()).toBe(0);
+
+  // Client-side route change swaps in scam content without a document load.
+  await page.click('#go');
+
+  // Without the navigation watcher the content script would stay blind here.
+  await page.waitForSelector('[data-cs-badge]', { state: 'attached', timeout: 20_000 });
+  expect(await page.locator('[data-cs-badge]').count()).toBeGreaterThanOrEqual(1);
+});
+
 test('shows a full-page block on a brand-typosquat domain', async ({ context }) => {
   const page = await context.newPage();
   await page.goto(`http://binancr.com:${PORT}/scam-giveaway.html`, { waitUntil: 'load' });

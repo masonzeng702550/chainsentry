@@ -2,6 +2,11 @@ import { hostname, registrableDomain } from '@/shared/domain';
 
 let injected = false;
 
+/** Allow the interstitial to arm again after a SPA route change. */
+export function resetBlocker(): void {
+  injected = false;
+}
+
 /** Full-page interstitial warning, shown only for 'danger' verdicts. Closed shadow DOM,
  *  re-injects itself if the page tries to remove it. */
 export function showBlockingWarning(reasons: string[], onContinue: () => void) {
