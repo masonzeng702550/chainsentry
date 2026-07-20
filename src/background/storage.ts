@@ -9,6 +9,7 @@ export interface Settings {
   language: 'auto' | 'en' | 'zh-TW';
   userAllowlist: string[];
   reportEndpoint: string;
+  communityBlocklistUrl: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -20,7 +21,20 @@ export const DEFAULT_SETTINGS: Settings = {
   language: 'auto',
   userAllowlist: [],
   reportEndpoint: '',
+  communityBlocklistUrl: '',
 };
+
+/**
+ * Anonymous, locally-generated reporter id. Lets the report service dedupe and
+ * rate-limit without any account, IP tracking, or identifying information.
+ */
+export async function getReporterId(): Promise<string> {
+  const { reporterId } = await chrome.storage.local.get('reporterId');
+  if (typeof reporterId === 'string' && reporterId.length >= 8) return reporterId;
+  const fresh = crypto.randomUUID();
+  await chrome.storage.local.set({ reporterId: fresh });
+  return fresh;
+}
 
 export async function getSettings(): Promise<Settings> {
   const { settings } = await chrome.storage.local.get('settings');

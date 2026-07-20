@@ -1,5 +1,5 @@
 import type { ScamReport } from '@/shared/messages';
-import { getSettings } from './storage';
+import { getSettings, getReporterId } from './storage';
 import { markScamAddress } from './entities';
 
 const QUEUE_KEY = 'reportQueue';
@@ -31,11 +31,12 @@ export async function submitReport(report: ScamReport): Promise<{ queued: number
   const { reportEndpoint } = await getSettings();
   let sent = false;
   if (reportEndpoint) {
+    const reporterId = await getReporterId();
     try {
       const res = await fetch(reportEndpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(report),
+        body: JSON.stringify({ ...report, reporterId }),
         signal: AbortSignal.timeout(10_000),
       });
       sent = res.ok;
@@ -52,13 +53,14 @@ export async function flushReports(): Promise<void> {
   if (!reportEndpoint) return;
   const queue = await readQueue();
   if (!queue.length) return;
+  const reporterId = await getReporterId();
   const remaining: ScamReport[] = [];
   for (const rep of queue) {
     try {
       const res = await fetch(reportEndpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(rep),
+        body: JSON.stringify({ ...rep, reporterId }),
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) remaining.push(rep);

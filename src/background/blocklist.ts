@@ -1,6 +1,9 @@
 // Blocklist sync + membership test. Sources are merged into a single domain Set,
 // persisted to storage. (A Bloom filter is the production optimization; the seed
 // build keeps an exact Set for clarity and correctness at small scale.)
+import type { Chain } from '@/shared/chains';
+import { getSettings } from './storage';
+import { markScamAddress } from './entities';
 
 interface BlocklistState {
   domains: string[];
@@ -23,6 +26,32 @@ const SOURCES: { name: string; url: string; parse: (raw: any) => string[]; ttlH:
 ];
 
 let memory: Set<string> | null = null;
+
+/**
+ * Pull the community-moderated list published by a ChainSentry report service.
+ * Domains merge into the blocklist; addresses become runtime scam labels that
+ * feed straight into the flow-engine risk score.
+ */
+async function syncCommunityList(into: Set<string>): Promise<void> {
+  const { communityBlocklistUrl } = await getSettings();
+  if (!communityBlocklistUrl) return;
+  try {
+    const res = await fetch(communityBlocklistUrl, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) return;
+    const data = (await res.json()) as {
+      domains?: string[];
+      addresses?: { chain: Chain; address: string }[];
+    };
+    for (const d of data.domains ?? []) {
+      into.add(String(d).toLowerCase().replace(/^www\./, ''));
+    }
+    for (const a of data.addresses ?? []) {
+      if (a?.chain && a?.address) markScamAddress(a.chain, a.address);
+    }
+  } catch {
+    // community list is optional — failure must not break the built-in sources
+  }
+}
 
 export async function loadBlocklist(): Promise<Set<string>> {
   if (memory) return memory;
@@ -56,6 +85,8 @@ export async function syncBlocklist(force = false): Promise<void> {
       // keep previous data on failure
     }
   }
+
+  await syncCommunityList(merged);
 
   state.domains = [...merged];
   memory = merged;

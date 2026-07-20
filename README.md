@@ -21,7 +21,8 @@ It also detects **fabricated "live transaction" feeds** (front-end fake ticker t
 | Laundering signals | Mixer proximity, fast-split / peel-chain timing, self-cycle detection |
 | Fake-feed detection | Cyclic-replay + on-chain contradiction checks on "live transaction" widgets |
 | YouTube hints | Warns when a channel name mimics an official brand but isn't verified |
-| Community reporting | Report a site/address; applied locally at once, queued, optionally POSTed to an endpoint |
+| Community reporting | Report a site/address; applied locally at once, queued, POSTed to the report service |
+| Community blocklist | Optional service aggregates reports and publishes a moderated list back to every user |
 | Report export | One-click PNG of the money-flow graph + risk summary (no backend) |
 
 ## Architecture
@@ -44,6 +45,7 @@ npm run test       # unit + integration tests (32): validators, refund/flow engi
 npm run test:e2e   # real-browser E2E: builds with CS_E2E=1 and drives a headless
                    # Chromium with the unpacked extension loaded (needs Playwright's
                    # Chromium: npx playwright install chromium)
+npm run server:dev # community report service on :8787 (see server/README.md)
 ```
 
 ### Test scaffold
@@ -73,9 +75,9 @@ Load the unpacked extension:
 
 ## Status
 
-Implemented: address detection & validation, chain-data providers (BTC/ETH/TRON) with caching & failover, money-flow graph, refund/cycle/fast-split analysis, risk scoring, link guard, blocklist sync, fake-feed detection, YouTube hints, community reporting (local + optional endpoint) with false-positive feedback, PNG report export, and an expanded entity-label seed set (mixers / exchanges / bridges). Popup / options / analysis UIs.
+Implemented: address detection & validation, chain-data providers (BTC/ETH/TRON) with caching & failover, money-flow graph, refund/cycle/fast-split analysis, risk scoring, link guard, blocklist sync, fake-feed detection, YouTube hints, community reporting with a moderated blocklist service (`server/`), false-positive feedback, PNG report export, and an expanded entity-label seed set (mixers / exchanges / bridges). Popup / options / analysis UIs.
 
-Roadmap: shared community blocklist backend, larger entity-label dataset (public tagpacks), livestream-frame OCR for on-screen addresses, Solana support.
+Roadmap: larger entity-label dataset (public tagpacks), sybil-resistance on the report service (auth or proof-of-work), moderator review queue, livestream-frame OCR for on-screen addresses, Solana support.
 
 ## Disclaimer
 

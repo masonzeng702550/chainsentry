@@ -12,6 +12,7 @@ interface Settings {
   etherscanApiKey: string;
   userAllowlist: string[];
   reportEndpoint: string;
+  communityBlocklistUrl: string;
 }
 
 const DEFAULTS: Settings = {
@@ -22,6 +23,7 @@ const DEFAULTS: Settings = {
   etherscanApiKey: '',
   userAllowlist: [],
   reportEndpoint: '',
+  communityBlocklistUrl: '',
 };
 
 function Options() {
@@ -87,7 +89,19 @@ function Options() {
       />
       <div style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>
         Reports are applied locally immediately. If an endpoint is set, they are also POSTed there
-        (queued and retried on failure).
+        (queued and retried on failure), tagged with a random local id — no account, no IP tracking.
+      </div>
+
+      <h3 style={{ marginTop: 24 }}>Community blocklist URL (optional)</h3>
+      <input
+        value={s.communityBlocklistUrl}
+        onInput={(e) => update({ communityBlocklistUrl: (e.target as HTMLInputElement).value })}
+        placeholder="https://…/v1/blocklist"
+        style={{ width: '100%', padding: 8, background: '#111827', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8 }}
+      />
+      <div style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>
+        Merged into the built-in blocklists on each sync. Reported addresses become scam labels
+        that raise the money-flow risk score.
       </div>
 
       <div style={{ marginTop: 16, height: 18, color: '#34d399', fontSize: 13 }}>
