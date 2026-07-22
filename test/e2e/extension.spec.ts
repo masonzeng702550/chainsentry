@@ -35,7 +35,12 @@ base.afterAll(async () => {
 });
 
 // --- extension fixture: fresh persistent context per test ---
-const test = base.extend<{ context: BrowserContext }>({
+const test = base.extend<{ context: BrowserContext; extensionId: string }>({
+  extensionId: async ({ context }, use) => {
+    let [sw] = context.serviceWorkers();
+    if (!sw) sw = await context.waitForEvent('serviceworker');
+    await use(sw.url().split('/')[2]);
+  },
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium', // new headless supports MV3 extensions
@@ -102,4 +107,25 @@ test('shows a full-page block on a brand-typosquat domain', async ({ context }) 
   await page.goto(`http://binancr.com:${PORT}/scam-giveaway.html`, { waitUntil: 'load' });
   await page.waitForSelector('[data-cs-overlay="block"]', { timeout: 20_000 });
   expect(await page.locator('[data-cs-overlay="block"]').count()).toBe(1);
+});
+
+test('analysis page says "not checked" instead of scoring an address it could not fetch', async ({
+  context,
+  extensionId,
+}) => {
+  // No Etherscan API key is configured here, so the provider fails exactly as it
+  // does for a real user without one. The page must NOT present that as a clean
+  // result -- no score, and it must explain that a key is needed.
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/src/analysis/index.html?chain=eth&address=0x28C6c06298d514Db089934071355E5743bf21d60`,
+  );
+
+  const panel = page.locator('aside');
+  await expect(panel.getByText('❔ Not checked', { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(panel.getByText('Treat this as unknown, not safe.')).toBeVisible();
+  // The reason must actually reach the user, not just the engine.
+  await expect(panel.getByText(/Etherscan API key/i)).toBeVisible();
+  // And it must never show a risk score for data it never had.
+  await expect(panel.getByText(/Risk score/i)).toHaveCount(0);
 });
