@@ -1,5 +1,20 @@
 import type { Chain } from '@/shared/chains';
 
+/**
+ * Raised when a provider cannot answer (missing API key, rate limit, outage).
+ * This must never be confused with "the address has no activity": reporting an
+ * unreachable chain as a clean address is a false reassurance on a security tool.
+ */
+export class ChainDataError extends Error {
+  constructor(
+    message: string,
+    readonly chain: Chain,
+  ) {
+    super(message);
+    this.name = 'ChainDataError';
+  }
+}
+
 export interface AddressSummary {
   chain: Chain;
   address: string;

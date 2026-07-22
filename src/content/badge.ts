@@ -1,7 +1,8 @@
 import type { AddressBrief, Chain } from '@/shared/messages';
 import { CHAIN_META } from '@/shared/chains';
 
-const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '⏳' };
+const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '❔' };
+const PENDING = '⏳';
 const rand = () => 'cs-' + Math.random().toString(36).slice(2, 9);
 
 /** Wrap an address occurrence and attach a shadow-DOM badge. Returns an update fn. */
@@ -26,7 +27,7 @@ export function attachBadge(
   wrapper.appendChild(host);
   const root = host.attachShadow({ mode: 'closed' });
   const badge = document.createElement('span');
-  badge.textContent = ICON.unknown;
+  badge.textContent = PENDING;
   badge.style.cssText =
     'cursor:pointer;margin-left:4px;font-size:12px;vertical-align:middle;user-select:none';
   const card = document.createElement('div');
@@ -51,10 +52,14 @@ export function attachBadge(
   return (brief: AddressBrief) => {
     badge.textContent = ICON[brief.risk] ?? ICON.unknown;
     const sym = CHAIN_META[chain].symbol;
+    // When the lookup failed, say so instead of showing zeroed stats that read as "clean".
+    const body = brief.dataAvailable
+      ? `<div style="margin-top:4px">Received: ${brief.totalReceived}</div>` +
+        `<div>Refunds: ${brief.refundedCount}/${brief.senderCount} senders</div>`
+      : `<div style="margin-top:4px;color:#fbbf24">Not checked — chain data unavailable.</div>`;
     card.innerHTML =
       `<b>${ICON[brief.risk]} ${sym}</b>` +
-      `<div style="margin-top:4px">Received: ${brief.totalReceived}</div>` +
-      `<div>Refunds: ${brief.refundedCount}/${brief.senderCount} senders</div>` +
+      body +
       (brief.reasons[0] ? `<div style="margin-top:4px;color:#fca5a5">${brief.reasons[0]}</div>` : '') +
       `<div style="margin-top:6px;color:#93c5fd">Click for full flow →</div>`;
   };

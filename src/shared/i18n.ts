@@ -16,7 +16,8 @@ export type ReasonCode =
   | 'fast_split'
   | 'young_address_high_inflow'
   | 'on_danger_page'
-  | 'scam_labeled';
+  | 'scam_labeled'
+  | 'chain_data_unavailable';
 
 const EN: Record<ReasonCode, string> = {
   blocklist_hit: 'Domain is on a known crypto-phishing blocklist.',
@@ -35,6 +36,8 @@ const EN: Record<ReasonCode, string> = {
   young_address_high_inflow: 'Address is new but already received many deposits.',
   on_danger_page: 'Address appears on a high-risk page.',
   scam_labeled: 'Address is labeled as a known scam address.',
+  chain_data_unavailable:
+    'Could not reach the blockchain data provider, so this address was NOT checked. This is not a clean result. (Ethereum lookups need an Etherscan API key — add one in settings.)',
 };
 
 export function reasonText(code: ReasonCode): string {

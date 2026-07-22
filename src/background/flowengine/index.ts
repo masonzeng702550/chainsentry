@@ -37,6 +37,26 @@ export async function analyzeAddress(
     summary?.firstSeen != null ? Math.floor(Date.now() / 1000) - summary.firstSeen : null;
 
   const scamLabeled = lookupEntity(chain, g.root)?.type === 'scam';
+
+  // A failed lookup must never read as a clean address. Known-scam labels are
+  // local, so they still stand even when the chain is unreachable.
+  if (!g.rootFetchOk && !scamLabeled) {
+    return {
+      chain,
+      root: g.root,
+      nodes: [...g.nodes.values()],
+      edges: stripRaw(g.edges),
+      refund,
+      cycles,
+      fastSplit: split,
+      score: 0,
+      risk: 'unknown',
+      reasons: [reasonText('chain_data_unavailable')],
+      truncated: g.truncated,
+      dataAvailable: false,
+    };
+  }
+
   const { score, risk, reasons } = scoreAddress({
     isScamLabeled: scamLabeled,
     refund,
@@ -59,6 +79,7 @@ export async function analyzeAddress(
     risk,
     reasons: reasons.map(reasonText),
     truncated: g.truncated,
+    dataAvailable: true,
   };
 }
 
@@ -83,5 +104,6 @@ export async function briefAddress(
     refundedCount: result.refund.refundedCount,
     senderCount: result.refund.senderCount,
     reasons: result.reasons,
+    dataAvailable: result.dataAvailable,
   };
 }

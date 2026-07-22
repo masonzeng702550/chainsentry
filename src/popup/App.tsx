@@ -2,12 +2,12 @@ import { useEffect, useState } from 'preact/hooks';
 import type { AddressBrief, UrlVerdict, MsgResponse } from '@/shared/messages';
 import { CHAIN_META } from '@/shared/chains';
 
-const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '⏳' };
+const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '❔' };
 const LABEL: Record<string, string> = {
   danger: 'Danger',
   warn: 'Suspicious',
   safe: 'No risks found',
-  unknown: 'Analyzing…',
+  unknown: 'Not checked',
 };
 
 export function App() {
@@ -109,7 +109,13 @@ export function App() {
               <span style={{ opacity: 0.7 }}>{CHAIN_META[a.chain].symbol}</span>
             </div>
             <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
-              Received {a.totalReceived} · Refunds {a.refundedCount}/{a.senderCount}
+              {a.dataAvailable ? (
+                <>
+                  Received {a.totalReceived} · Refunds {a.refundedCount}/{a.senderCount}
+                </>
+              ) : (
+                <span style={{ color: '#fbbf24' }}>Not checked — chain data unavailable</span>
+              )}
             </div>
             <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 4 }}>View money flow →</div>
           </button>

@@ -1,4 +1,5 @@
 import type { ChainDataProvider, AddressSummary, Tx } from './types';
+import { ChainDataError } from './types';
 import { RateLimiter, getJson } from './http';
 
 // Etherscan V2 unified API. Works without a key at low rate; user can supply their own key.
@@ -30,11 +31,28 @@ export class EthProvider implements ChainDataProvider {
     return `${BASE}?${p.toString()}`;
   }
 
+  /**
+   * Etherscan signals both "nothing found" and hard failures with status "0".
+   * Only the latter may be treated as an error — the rest is a legitimate
+   * empty result. Etherscan V2 rejects every unkeyed request, so without a key
+   * this throws rather than masquerading as an address with no activity.
+   */
+  private assertUsable(r: EsResp<unknown>): void {
+    if (r.status === '1') return;
+    const detail = typeof r.result === 'string' ? r.result : r.message;
+    if (/no transactions found|no records found/i.test(detail ?? '')) return;
+    throw new ChainDataError(detail || 'Etherscan request failed', 'eth');
+  }
+
   async getAddressSummary(addr: string): Promise<AddressSummary> {
     await this.limiter.acquire();
     const bal = await getJson<EsResp<string>>(
       this.q({ module: 'account', action: 'balance', address: addr, tag: 'latest' }),
     );
+    this.assertUsable(bal);
+    if (!/^\d+$/.test(bal.result ?? '')) {
+      throw new ChainDataError(`unexpected balance payload: ${bal.result}`, 'eth');
+    }
     // Derive received/sent/counts from the recent tx window (bounded — full history needs pagination).
     const txs = await this.getTransactions(addr, { limit: 200 });
     let received = 0n;
@@ -74,7 +92,8 @@ export class EthProvider implements ChainDataProvider {
         sort: 'desc',
       }),
     );
-    if (r.status !== '1' || !Array.isArray(r.result)) return [];
+    this.assertUsable(r);
+    if (!Array.isArray(r.result)) return [];
     return r.result
       .filter((t) => t.isError === '0' && t.value !== '0')
       .map((t) => ({

@@ -12,6 +12,8 @@ export interface AddressBrief {
   refundedCount: number;
   senderCount: number;
   reasons: string[];
+  /** False when chain data could not be fetched — the verdict is "unknown", not "safe". */
+  dataAvailable: boolean;
 }
 
 export interface UrlVerdict {
@@ -58,6 +60,8 @@ export interface FlowResult {
   risk: RiskLevel;
   reasons: string[];
   truncated: boolean;
+  /** False when chain data could not be fetched — the verdict is "unknown", not "safe". */
+  dataAvailable: boolean;
 }
 
 // ---- content <-> service worker messages ----

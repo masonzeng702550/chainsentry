@@ -11,6 +11,8 @@ export interface RawGraph {
   edges: Map<string, FlowEdge & { valueRaw: bigint }>;
   rootTxs: Tx[];
   truncated: boolean;
+  /** False when the root address's own history could not be fetched. */
+  rootFetchOk: boolean;
 }
 
 const MAX_NODES = 300;
@@ -35,6 +37,7 @@ export async function buildFlowGraph(
   const edges = new Map<string, FlowEdge & { valueRaw: bigint }>();
   let rootTxs: Tx[] = [];
   let truncated = false;
+  let rootFetchOk = false;
 
   const norm = (a: string) => (chain === 'eth' ? a.toLowerCase() : a);
   const rootN = norm(root);
@@ -65,7 +68,10 @@ export async function buildFlowGraph(
       } catch {
         continue;
       }
-      if (addr === rootN) rootTxs = txs;
+      if (addr === rootN) {
+        rootTxs = txs;
+        rootFetchOk = true;
+      }
 
       const addEdge = (from: string, to: string, value: bigint, ts: number) => {
         if (from === to || value < dust) return;
@@ -129,7 +135,7 @@ export async function buildFlowGraph(
     frontier = next;
   }
 
-  return { chain, root: rootN, nodes, edges, rootTxs, truncated };
+  return { chain, root: rootN, nodes, edges, rootTxs, truncated, rootFetchOk };
 }
 
 function addNode(nodes: Map<string, FlowNode>, chain: Chain, addr: string, hop: number) {

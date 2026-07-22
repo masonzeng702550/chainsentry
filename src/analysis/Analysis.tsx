@@ -4,7 +4,7 @@ import { CHAIN_META } from '@/shared/chains';
 import { drawGraph } from './graph';
 import { exportReport } from './export';
 
-const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '⏳' };
+const ICON: Record<string, string> = { danger: '🔴', warn: '🟡', safe: '🟢', unknown: '❔' };
 
 export function Analysis({ chain, address }: { chain: Chain; address: string }) {
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
@@ -116,6 +116,27 @@ export function Analysis({ chain, address }: { chain: Chain; address: string }) 
 
 function Summary({ result, sym }: { result: FlowResult; sym: string }) {
   const r = result.refund;
+
+  // A failed lookup is not a clean result — never show a score or the
+  // reassuring empty-findings copy when nothing was actually checked.
+  if (!result.dataAvailable) {
+    return (
+      <div>
+        <div style={{ padding: 12, borderRadius: 10, background: 'rgba(245,158,11,.15)' }}>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>❔ Not checked</div>
+          <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13 }}>
+            {result.reasons.map((x) => (
+              <li>{x}</li>
+            ))}
+          </ul>
+          <div style={{ marginTop: 8, fontSize: 12, color: '#fbbf24' }}>
+            Treat this as unknown, not safe.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div
