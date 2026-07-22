@@ -73,6 +73,11 @@ test('overlays a warning on the fabricated live-transaction ticker', async ({ co
   // layout box of its own (its warning UI lives in a closed shadow root), so wait
   // for it to be attached rather than visually painted.
   await page.waitForSelector('[data-cs-fakefeed]', { state: 'attached', timeout: 50_000 });
+
+  // The warning must SURVIVE the page's own DOM churn. The fixture's ticker prunes
+  // its container's children every ~1.2s; when the warning was appended inside that
+  // container it was silently deleted, and a fast poll still saw it in the gap.
+  await page.waitForTimeout(5000);
   expect(await page.locator('[data-cs-fakefeed]').count()).toBe(1);
 });
 
